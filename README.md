@@ -9,12 +9,40 @@ export as CSV and PDF.
 
 Everything stays on this PC. There are no accounts, no cloud services and no telemetry.
 
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20installer-1F5FD1?style=for-the-badge)](https://github.com/AjabiOladipupo/ByteLog/releases/latest/download/ByteLog-Setup.exe)
+[![Latest release](https://img.shields.io/github/v/release/AjabiOladipupo/ByteLog?style=for-the-badge&color=14202B)](https://github.com/AjabiOladipupo/ByteLog/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-F2A65A?style=for-the-badge)](LICENSE)
+
+![ByteLog dashboard showing this month's usage, a data plan and usage by network (demo data)](docs/screenshot.png)
+
+## Install
+
+1. Click **Download for Windows** above, or download `ByteLog-Setup.exe` from the
+   [latest release](https://github.com/AjabiOladipupo/ByteLog/releases/latest).
+2. Run it. It installs for your user only and needs no admin rights. The installer isn't code
+   signed, so Windows SmartScreen may say "Windows protected your PC". Click **More info**,
+   then **Run anyway**.
+3. ByteLog starts right away and starts again every time you sign in. Open it from the Start
+   menu or the tray icon.
+4. On Windows 11, turn on **Settings → Privacy & security → Location → Let desktop apps access
+   your location**. Without it, Windows hides Wi-Fi network names from apps.
+5. Add your data plan under **Plans and alerts**.
+
+Requirements: Windows 10 or 11 (64-bit). If you'd rather not use an installer,
+`ByteLog-Portable-win64.zip` on the release page holds the same app as a folder you can
+unzip and run.
+
+To uninstall, use **Settings → Apps → Installed apps → ByteLog**. Your usage history in
+`%LOCALAPPDATA%\ByteLog` is kept; delete that folder if you want it gone.
+
 ## Setup (development)
 
 Requirements: Windows 10 or 11 and [uv](https://docs.astral.sh/uv/). uv downloads Python 3.12
 on its own.
 
 ```powershell
+git clone https://github.com/AjabiOladipupo/ByteLog.git
+cd ByteLog
 uv python install 3.12
 uv sync --all-groups          # creates .venv with runtime, dev (pytest, ruff) and build (PyInstaller) deps
 ```
@@ -59,7 +87,7 @@ de-duplication.
 
 ## Architecture
 
-```
+```text
 src/bytelog/
   platform/    OS layer: Platform protocol (base.py), windows.py, fake.py for tests
   collector/   headless sampler: delta maths, adapter filter, sampler, service loop, alerts
@@ -147,6 +175,16 @@ dependencies. The script then zips the folder to `dist\ByteLog-<version>-win64.z
 Setup 6 (`ISCC.exe`) is installed, it also builds a per-user installer that needs no admin
 rights. The installer adds a Start-menu shortcut, starts the collector and registers it to
 start at login.
+
+To publish a release, upload the installer and the zip under stable names, so the README's
+download button (`releases/latest/download/ByteLog-Setup.exe`) always points at the newest
+version:
+
+```powershell
+Copy-Item dist\ByteLog-<version>-setup.exe dist\ByteLog-Setup.exe
+Copy-Item dist\ByteLog-<version>-win64.zip dist\ByteLog-Portable-win64.zip
+gh release create v<version> dist\ByteLog-Setup.exe dist\ByteLog-Portable-win64.zip --title "ByteLog <version>"
+```
 
 Start at login uses a per-user Task Scheduler task (`ByteLog Collector`), created from XML so
 that it does not stop on battery or after 3 days. If a policy blocks tasks, an `HKCU\...\Run`

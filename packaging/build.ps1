@@ -87,8 +87,14 @@ Write-Host "Zip: $Zip"
 if ($SkipInstaller) { return }
 $iscc = Find-Iscc
 if ($iscc) {
-    Invoke-Checked $iscc @("/DAppVersion=$Version", "/DBuildDir=$AppDir", "/O$Dist",
-        (Join-Path $Root 'packaging\bytelog.iss'))
+    # Retried for the same reason as the zip: a scanner may still hold the previous setup.exe.
+    for ($attempt = 1; ; $attempt++) {
+        & $iscc /Q "/DAppVersion=$Version" "/DBuildDir=$AppDir" "/O$Dist" (Join-Path $Root 'packaging\bytelog.iss')
+        if ($LASTEXITCODE -eq 0) { break }
+        if ($attempt -ge 3) { throw "$iscc failed with exit code $LASTEXITCODE" }
+        Write-Host "Installer attempt $attempt failed; retrying"
+        Start-Sleep -Seconds 5
+    }
     Write-Host "Installer: $(Join-Path $Dist "ByteLog-$Version-setup.exe")"
 } else {
     Write-Host 'Inno Setup 6 (ISCC.exe) not found; skipped the installer.'
