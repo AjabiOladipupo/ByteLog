@@ -101,6 +101,14 @@ class Platform(Protocol):
 
     def autostart_enabled(self) -> bool: ...
 
+    def autostart_is_current(self) -> bool:
+        """True if start-at-login is registered and starts *this* installation's collector.
+
+        False when it is missing or points at another copy (the app was moved, reinstalled
+        elsewhere, or first run from a build folder), so callers can re-register it.
+        """
+        ...
+
     def set_autostart(self, enabled: bool) -> None:
         """Register/unregister the collector to start at user login."""
         ...

@@ -74,6 +74,7 @@ class FakePlatform:
         self.lock_held = False
         self.launches = 0
         self.autostart = False
+        self.autostart_current = True  # False = registered, but for another copy of the app
         self.opened_paths: list[Path] = []
         self._queued: deque[Snapshot] = deque()
 
@@ -153,8 +154,12 @@ class FakePlatform:
     def autostart_enabled(self) -> bool:
         return self.autostart
 
+    def autostart_is_current(self) -> bool:
+        return self.autostart and self.autostart_current
+
     def set_autostart(self, enabled: bool) -> None:
         self.autostart = enabled
+        self.autostart_current = enabled
 
     def open_path(self, path: Path) -> None:
         self.opened_paths.append(path)

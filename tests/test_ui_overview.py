@@ -316,6 +316,20 @@ def test_ensure_autostart_registers_only_when_frozen_and_wanted() -> None:
     assert platform.autostart is True
 
 
+def test_ensure_autostart_repoints_a_task_for_another_copy() -> None:
+    """A task left by a copy run from elsewhere (e.g. dist\\) is re-registered for this one."""
+    from bytelog.platform.fake import FakePlatform
+    from bytelog.ui.app import ensure_autostart
+
+    platform = FakePlatform()
+    platform.autostart = True
+    platform.autostart_current = False
+    thread = ensure_autostart(platform, wanted=True, frozen=True)
+    assert thread is not None
+    thread.join(5)
+    assert platform.autostart_is_current()
+
+
 def test_mono_numbers_wraps_figures_only() -> None:
     from bytelog.ui.pages.overview import mono_numbers
 

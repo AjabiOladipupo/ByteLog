@@ -121,18 +121,16 @@ def ensure_autostart(
     frozen: bool,
     on_done: Callable[[], None] | None = None,
 ) -> threading.Thread | None:
-    """Register start-at-login in the background when the setting wants it and it is missing.
-
-    ``start_at_login`` defaults to on, but only the Settings toggle registered the task, so a
-    fresh install never started at login. Dev runs are skipped: the task would point at the
-    development interpreter.
+    """Register start-at-login in the background when the setting wants it and it is missing
+    or points at another copy of the app (moved, reinstalled, or first run from a build
+    folder). Dev runs are skipped: the task would point at the development interpreter.
     """
     if not (wanted and frozen):
         return None
 
     def work() -> None:
         try:
-            if not platform.autostart_enabled():
+            if not platform.autostart_is_current():
                 platform.set_autostart(True)
                 log.info("registered the collector to start at login")
         except Exception:

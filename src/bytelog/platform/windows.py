@@ -22,8 +22,10 @@ import contextlib
 import ctypes
 import functools
 import getpass
+import html
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -890,6 +892,12 @@ class WindowsPlatform:
             log.warning("schtasks /query failed: %s", exc)
         return _run_value() is not None
 
+    def autostart_is_current(self) -> bool:
+        registered = registered_autostart_exe()
+        if registered is None:
+            return False
+        return _same_path(registered, collector_command()[0])
+
     def set_autostart(self, enabled: bool) -> None:
         if not enabled:
             try:
@@ -999,6 +1007,40 @@ def _create_task(task_name: str = TASK_NAME) -> bool:
     finally:
         with contextlib.suppress(OSError):
             os.unlink(name)
+
+
+def registered_autostart_exe() -> str | None:
+    """Executable that start-at-login runs: the logon task's command, else the Run value."""
+    try:
+        proc = run_hidden(["schtasks", "/query", "/tn", TASK_NAME, "/xml"])
+        if proc.returncode == 0:
+            command = task_xml_command(proc.stdout)
+            if command:
+                return command
+    except Exception as exc:
+        log.warning("schtasks /query /xml failed: %s", exc)
+    value = _run_value()
+    return first_argument(value) if value else None
+
+
+def task_xml_command(output: bytes) -> str | None:
+    """``<Command>`` of a ``schtasks /query /xml`` dump (UTF-16 or ANSI, per Windows build)."""
+    text = output.decode("utf-16") if output[:2] in (b"\xff\xfe", b"\xfe\xff") else _decode(output)
+    match = re.search(r"<Command>(.*?)</Command>", text, re.DOTALL)
+    return html.unescape(match.group(1).strip()) if match else None
+
+
+def first_argument(command_line: str) -> str:
+    """First token of a Windows command line (the executable)."""
+    command_line = command_line.strip()
+    if command_line.startswith('"'):
+        end = command_line.find('"', 1)
+        return command_line[1:end] if end > 0 else command_line[1:]
+    return command_line.split(" ", 1)[0]
+
+
+def _same_path(a: str, b: str) -> bool:
+    return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
 
 
 def _run_value() -> str | None:

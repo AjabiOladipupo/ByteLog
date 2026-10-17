@@ -113,6 +113,36 @@ def test_task_xml_well_formed() -> None:
     assert no_args.find(".//t:Exec/t:Arguments", ns) is None
 
 
+def test_task_xml_command_round_trip() -> None:
+    from bytelog.platform.windows import build_task_xml, task_xml_command
+
+    exe = r"C:\Program Files\ByteLog & Co\ByteLogCollector.exe"
+    xml = build_task_xml([exe], "PC\\user")
+    assert task_xml_command(xml.encode("utf-16")) == exe  # schtasks /xml on most builds
+    assert task_xml_command(xml.encode("mbcs")) == exe
+    assert task_xml_command(b"ERROR: not found") is None
+
+
+def test_first_argument() -> None:
+    from bytelog.platform.windows import first_argument
+
+    assert first_argument('"C:\\A B\\c.exe" --data-dir x') == "C:\\A B\\c.exe"
+    assert first_argument("C:\\AB\\c.exe --once") == "C:\\AB\\c.exe"
+
+
+def test_autostart_is_current_compares_paths(monkeypatch) -> None:
+    from bytelog.platform import windows
+
+    monkeypatch.setattr(windows, "collector_command", lambda: [r"C:\New\ByteLogCollector.exe"])
+    plat = windows.WindowsPlatform(object_prefix=TEST_PREFIX)
+    monkeypatch.setattr(windows, "registered_autostart_exe", lambda: None)
+    assert not plat.autostart_is_current()
+    monkeypatch.setattr(windows, "registered_autostart_exe", lambda: r"C:\Old\ByteLogCollector.exe")
+    assert not plat.autostart_is_current()
+    monkeypatch.setattr(windows, "registered_autostart_exe", lambda: r"c:\new\bytelogcollector.EXE")
+    assert plat.autostart_is_current()
+
+
 def test_collector_command_passes_data_dir(monkeypatch, tmp_path) -> None:
     from bytelog.platform.windows import collector_command
 
