@@ -1,0 +1,52 @@
+[project]
+name = "bytelog"
+version = "0.1.0"
+description = "Local desktop monitor for internet data usage: daily, weekly, monthly and all-time, per network, with data plans and alerts."
+authors = [
+    { name = "AjabiOladipupo", email = "66166525+AjabiOladipupo@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "psutil>=6.0",
+    "PySide6-Essentials>=6.8",
+    "pyqtgraph>=0.13.7",
+    "numpy>=1.26",
+    "reportlab>=4.2",
+    "tzlocal>=5.2",
+    "tzdata>=2024.1",
+    "windows-toasts>=1.3; sys_platform == 'win32'",
+]
+
+[project.scripts]
+bytelog = "bytelog.ui.app:main"
+bytelog-collector = "bytelog.collector.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+build = [
+    "pyinstaller>=6.17",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+"scripts/**" = ["ANN"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
